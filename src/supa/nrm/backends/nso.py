@@ -11,6 +11,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from random import randint
 from typing import Any, List
 from uuid import UUID
 
@@ -18,7 +19,7 @@ from pydantic_settings import BaseSettings
 
 from supa.nrm.backend import STP, BaseBackend
 from supa.util.find import find_file
-from supa.util.nso import HTTPBasicAuth, NotFoundError, NSOClient
+from supa.util.nso import HTTPBasicAuth, NSOClient
 
 
 class BackendSettings(BaseSettings):
@@ -34,7 +35,7 @@ class BackendSettings(BaseSettings):
 
 
 class Backend(BaseBackend):
-    """NSO backend interface"""
+    """NSO backend interface."""
 
     nso: NSOClient
 
@@ -42,9 +43,8 @@ class Backend(BaseBackend):
         """Load properties from 'nso.env'."""
         super(Backend, self).__init__()
         self.log.info("Loading NSO backend")
-        self.backend_settings = BackendSettings(
-            _env_file=(env_file := find_file("nso.env"))
-        )  # type: ignore[call-arg]
+        self.backend_settings = BackendSettings(_env_file=(env_file := find_file("nso.env")))  # type: ignore[call-arg]
+
         self.log.info("Read backend properties", path=str(env_file))
 
         self.nso = NSOClient(
@@ -96,17 +96,13 @@ class Backend(BaseBackend):
     def _service_delete(self, circuit_id: str) -> None:
         self.log.info("Delete service in NSO")
 
-        self.nso.delete(
-            path=f"/tailf-ncs:services/nsi-circuit:nsi-circuit={circuit_id}"
-        )
+        self.nso.delete(path=f"/tailf-ncs:services/nsi-circuit:nsi-circuit={circuit_id}")
 
     def _get_topology(self) -> List[STP]:
         self.log.info("Get topology from NSO")
         ports: List[STP] = []
 
-        nso_stp = self.nso.post(
-            path="/common:workflow/nsi-circuit:get-nsi-stp", payload={}
-        )
+        nso_stp = self.nso.post(path="/common:workflow/nsi-circuit:get-nsi-stp", payload={})
         self.log.debug("NSO STPs", nso_stp=nso_stp)
 
         for stp in nso_stp["nsi-circuit:output"]["stp-list"]:
@@ -132,7 +128,7 @@ class Backend(BaseBackend):
         dst_port_id: str,
         dst_vlan: int,
         circuit_id: str,
-    ) -> None:
+    ) -> str:
         """Activate resources in NRM."""
         self.log = self.log.bind(primitive="activate")
         self.log.debug(
@@ -145,10 +141,8 @@ class Backend(BaseBackend):
             dst_vlan=dst_vlan,
             circuit_id=circuit_id,
         )
-        circuit_id = "NSI_L2VPN_666"
-        self._service_create(
-            circuit_id, src_port_id, src_vlan, dst_port_id, dst_vlan, bandwidth
-        )
+        circuit_id = f"NSI_L2VPN_{randint(1000, 9999)}"
+        self._service_create(circuit_id, src_port_id, src_vlan, dst_port_id, dst_vlan, bandwidth)
         return circuit_id
 
     def deactivate(

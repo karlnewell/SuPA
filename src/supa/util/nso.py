@@ -25,10 +25,7 @@ class NSOCommitMode(Enum):
 
     @classmethod
     def _missing_(cls, value: str):
-        raise Exception(
-            f"{value} is not a valid {cls.__name__}"
-            f"valid options are {cls._member_names_}"
-        )
+        raise Exception(f"{value} is not a valid {cls.__name__}" f"valid options are {cls._member_names_}")
 
 
 class NSOClient:
@@ -339,14 +336,10 @@ class NSOClient:
 
     def _make_url(self, path, args):
         """Substitute {} items in path with url encoded values"""
-        url = self.base_url + path.format(
-            *[urllib.parse.quote(str(p), safe="") for p in args]
-        )
+        url = self.base_url + path.format(*[urllib.parse.quote(str(p), safe="") for p in args])
         return url
 
-    def _raise_if_error(
-        self, response: requests.Response, ignore_codes: List[int] = []
-    ) -> None:
+    def _raise_if_error(self, response: requests.Response, ignore_codes: List[int] = []) -> None:
         """Raises the appropriate exception if there is one"""
 
         if response.ok:
@@ -359,10 +352,7 @@ class NSOClient:
             raise NotFoundError(response, self.log)
         elif response.status_code == 401:
             raise AccessDeniedError(response, self.log)
-        elif (
-            response.status_code == 400
-            and "ietf-yang-patch:yang-patch-status" in response.text
-        ):
+        elif response.status_code == 400 and "ietf-yang-patch:yang-patch-status" in response.text:
             raise YangPatchError(response, self.log)
         elif response.status_code == 400:
             raise BadRequestError(response, self.log)
@@ -633,9 +623,7 @@ class Patch:
                 ok=("ok" in resp),
             )
         else:
-            raise NotImplementedError(
-                f"Unable to detect response format; keys={list(resp.keys())}"
-            )
+            raise NotImplementedError(f"Unable to detect response format; keys={list(resp.keys())}")
 
 
 class PatchError(Exception):
@@ -682,9 +670,7 @@ class DryRunResult:
             self.dry_run = self.DryRunType.CLI
             changes = response["native"]
         else:
-            raise NotImplementedError(
-                f"Not sure how to interpret dry-run with keys {list(response.keys())}"
-            )
+            raise NotImplementedError(f"Not sure how to interpret dry-run with keys {list(response.keys())}")
 
         # Simplify the changes structure
         self.changes = {k: v["data"] for k, v in changes.items()}
