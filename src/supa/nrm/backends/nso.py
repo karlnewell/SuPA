@@ -14,6 +14,7 @@
 from typing import Any, List
 from uuid import UUID
 
+import httpx
 from httpx import BasicAuth
 from nso_client import NSOClient, YangData
 from pydantic_settings import BaseSettings
@@ -38,6 +39,9 @@ class BackendSettings(BaseSettings):
     nso_verify_ssl: bool
     nso_circuit_id_prefix: str = "NSI_L2VPN_"
     nso_circuit_id_start: int = 10000
+    nso_connect_timeout: float = 10.0
+    nso_read_timeout: float = 120.0
+    nso_write_timeout: float = 120.0
 
 
 class Backend(BaseBackend):
@@ -61,6 +65,12 @@ class Backend(BaseBackend):
             ),
             verify=self.backend_settings.nso_verify_ssl,
             logger=self.log,
+            timeout=httpx.Timeout(
+                connect=self.backend_settings.nso_connect_timeout,
+                read=self.backend_settings.nso_read_timeout,
+                write=self.backend_settings.nso_write_timeout,
+                pool=10.0,
+            ),
         )
 
     def _service_create(
@@ -154,10 +164,10 @@ class Backend(BaseBackend):
                     stp_id=stp["stp-id"],
                     port_id=stp["port-id"],
                     vlans=stp["vlans"],
-                    description=stp["description"],
-                    bandwidth=stp["bandwidth"],
-                    is_alias_in=stp["is-alias-in"],
-                    is_alias_out=stp["is-alias-out"],
+                    description=stp.get("description"),
+                    bandwidth=stp.get("bandwidth", 1000000000),
+                    is_alias_in=stp.get("is-alias-in"),
+                    is_alias_out=stp.get("is-alias-out"),
                 )
             )
         return ports
